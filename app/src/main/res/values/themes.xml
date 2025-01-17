@@ -1,0 +1,8 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Base.Theme.SlidePuzzle" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/dark_pink</item>
+    </style>
+
+    <style name="Theme.SlidePuzzle" parent="Base.Theme.SlidePuzzle" />
+</resources>

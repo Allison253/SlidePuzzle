@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mainLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/black"
+    android:orientation="vertical"
+    tools:context="MainActivity"
+    android:screenOrientation="portrait">
+
+
+    <TextView
+        android:id="@+id/moves"
+        android:layout_width="266dp"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/shuffleBtn"
+        android:layout_alignParentEnd="true"
+        android:layout_marginEnd="30dp"
+        android:layout_marginBottom="-188dp"
+        android:text="Number of Moves: 0"
+        android:textAlignment="center"
+        app:layout_constraintBottom_toTopOf="@+id/shuffleBtn"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <Button
+        android:id="@+id/shuffleBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/selectImage"
+        android:layout_alignParentEnd="true"
+        android:layout_centerVertical="true"
+        android:layout_marginEnd="34dp"
+        android:layout_marginBottom="6dp"
+        android:text="@string/shuffle"
+        app:layout_constraintBottom_toBottomOf="@+id/selectImage" />
+
+    <ImageView
+        android:id="@+id/selectImage"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginTop="5dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="139dp"
+        android:adjustViewBounds="true"
+        android:background="@color/cardview_dark_background"
+        android:contentDescription="@string/select_image"
+        android:scaleType="fitXY"
+        android:src="@drawable/images" />
+
+    <ImageButton
+        android:id="@+id/gridSelector"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginStart="598dp"
+        android:layout_marginBottom="140dp"
+        android:adjustViewBounds="true"
+        android:background="@color/cardview_dark_background"
+        android:contentDescription="@string/set_grid_value"
+        android:scaleType="fitXY"
+        android:src="@drawable/grid" />
+
+
+</RelativeLayout>
