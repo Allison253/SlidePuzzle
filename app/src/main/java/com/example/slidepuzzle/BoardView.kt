@@ -28,13 +28,11 @@ class BoardView (context:Context): View (context) {
     lateinit var newView:ImageView
     val p=ArrayList<Tile>()
     val d= mutableMapOf<Int, position>()
-
     var emptyspace: Int=0
 
-
-
     //https://medium.com/@NumberShapes/kotlin-dynamically-creating-an-imageview-during-runtime-aec9268f9ccf
-
+    //draw vs redraw
+    //draw creates new tile clasess (var myTile), redraw uses existing tiles
     fun draw(myView: ViewGroup, numTiles: Int, curBitmap: Bitmap) {
         val tiles: Int= sqrt(numTiles.toDouble()).toInt()
         var w:Int=0
@@ -52,9 +50,6 @@ class BoardView (context:Context): View (context) {
             posy = 25F
             posx = 25F
         }
-
-
-
 
 
         var tileWidth=curBitmap.width/tiles //for image
@@ -109,15 +104,15 @@ class BoardView (context:Context): View (context) {
     }
 
 
-    fun reDraw(myView: ViewGroup, numTiles:Int, curBitmap: Bitmap, listPos: ArrayList<Int>,  curEmptySpace: Int){
+    fun reDraw(myView: ViewGroup, numTiles:Int,   curEmptySpace: Int){
+
         //redraw at new positions
         emptyspace=curEmptySpace
         val tiles: Int= sqrt(numTiles.toDouble()).toInt()
         var w:Int=0
-        var posx=0F
-        var posy=0F
         var startX=0F
         var startY=0F
+        Log.d("TEST",myView.resources.configuration.orientation.toString())
         if (myView.resources.configuration.orientation==1){
             val screenWidth = myView.width-50
             w= (screenWidth-(10*tiles))/tiles //for imageView
@@ -130,16 +125,35 @@ class BoardView (context:Context): View (context) {
             startX = 25F
             startY = 25F
         }
-
-
-
-
-
-        var tileWidth=curBitmap.width/tiles //for image
-        var tileHeight=curBitmap.height/tiles //for image
-
         //to do: implement draw function for redraw
-        //to do: Merge draw and redraw functions??
+
+        for (t in p){
+            //for each tile in p, determine current position
+            t.img.layoutParams.width= w
+            t.img.layoutParams.height=w
+            t.img.x=startX+((w+10)*(t.curp%tiles))
+            t.img.y=startY+((w+10)*(t.curp/tiles))
+            val parentView = t.img.parent as? ViewGroup
+            if (parentView!= null){
+                parentView.removeView(t.img)
+            }
+            myView.addView(t.img)
+            var myPos: position =position()
+            myPos.x=t.img.x
+            myPos.y=t.img.y
+            Log.d("d issues", d[t.id]?.x.toString())
+            d[t.curp]=myPos
+        }
+
+        //set empty position
+        //how to do this? We do not know where the empty space is!
+
+        //add final empty space to position dictionary
+        var myPos: position =position()
+        myPos.x=startX+((w+10)*(emptyspace%tiles))
+        myPos.y=startY+((w+10)*(emptyspace/tiles))
+        d[emptyspace]=myPos
+
     }
 
     fun moveTile(t:Tile){
@@ -236,7 +250,6 @@ class BoardView (context:Context): View (context) {
     }
 
     fun resetPuzzle(myView: ViewGroup){
-
 
         if (myView.childCount>9){
             myView.removeViews(5,myView.childCount-5)
