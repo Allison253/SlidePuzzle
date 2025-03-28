@@ -87,17 +87,21 @@ class MainActivity : AppCompatActivity() {
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
         if (pvm.boardView==null){
-            resetAndDraw(pvm.tileBy)
+            resetAndDraw(pvm.tileBy) //delete existing image views and draw
         }else{
             //REDRAW!
-            mainView=findViewById(R.id.mainLayout)
-            pvm.boardView!!.reDraw(mainView, pvm.tileBy*pvm.tileBy, pvm.boardView!!.emptyspace)
+            pvm.boardView!!.reDraw(mainView, pvm.tileBy*pvm.tileBy, pvm.boardView!!.emptyspace) //use currrent board view to move tiles to new orientation
             binding.moves.text= "Number of Moves: ${pvm.numMoves}"
         }
         binding.shuffleBtn.setOnClickListener{(onShuffle())}
         binding.selectImage.setOnClickListener{(findPic())}
         binding.gridSelector.setOnClickListener{updateTileBy()}
 
+        for (myTile in pvm.boardView!!.p) {
+            //reset set on click listener whether drawing for first time or nth
+
+            myTile.img.setOnClickListener{(onClickImage(myTile.img.id, myTile))}
+        }
 
 
     }
@@ -125,14 +129,10 @@ class MainActivity : AppCompatActivity() {
             pvm.boardView= BoardView(this)
         }
         //reset values
-        pvm.boardView!!.resetPuzzle(mainView)
+       pvm.boardView!!.resetPuzzle(mainView)
 
         pvm.boardView!!.draw(mainView, numTiles*numTiles,pvm.curImg!!)
-        for (myTile in pvm.boardView!!.p) {
-            var myImage: ImageView=myTile.img
-            myImage.setOnClickListener{(onClickImage(myTile.img.id, myTile))}
 
-        }
 
     }
 
@@ -142,7 +142,7 @@ class MainActivity : AppCompatActivity() {
    private fun onClickImage(id: Int, tile:Tile){
        Log.d(ma, "Clicked for image id="+id.toString())
        pvm.numMoves += 1
-
+       binding.moves.text= "Number of Moves: ${pvm.numMoves}"
         if (!pvm.isSolved){
 
             //row=tile.curp//tileby
@@ -156,7 +156,7 @@ class MainActivity : AppCompatActivity() {
             var clickspace  =tile.curp
 
             if (row==emptyRow || col==emptyCol){
-                binding.moves.text= "Number of Moves: ${pvm.numMoves}"
+
                 var shift: Int =0
                 if (row==emptyRow){
                     shift=if(col<emptyCol)-1 else 1
