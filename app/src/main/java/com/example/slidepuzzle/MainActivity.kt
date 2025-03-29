@@ -89,19 +89,13 @@ class MainActivity : AppCompatActivity() {
         if (pvm.boardView==null){
             resetAndDraw(pvm.tileBy) //delete existing image views and draw
         }else{
-            //REDRAW!
-            pvm.boardView!!.reDraw(mainView, pvm.tileBy*pvm.tileBy, pvm.boardView!!.emptyspace) //use currrent board view to move tiles to new orientation
-            binding.moves.text= "Number of Moves: ${pvm.numMoves}"
+            reDraw()
         }
         binding.shuffleBtn.setOnClickListener{(onShuffle())}
         binding.selectImage.setOnClickListener{(findPic())}
         binding.gridSelector.setOnClickListener{updateTileBy()}
 
-        for (myTile in pvm.boardView!!.p) {
-            //reset set on click listener whether drawing for first time or nth
 
-            myTile.img.setOnClickListener{(onClickImage(myTile.img.id, myTile))}
-        }
 
 
     }
@@ -129,11 +123,26 @@ class MainActivity : AppCompatActivity() {
             pvm.boardView= BoardView(this)
         }
         //reset values
-       pvm.boardView!!.resetPuzzle(mainView)
-
+        pvm.boardView!!.resetPuzzle(mainView)
+        pvm.numMoves=0
+        binding.moves.text= "Number of Moves: ${pvm.numMoves}"
         pvm.boardView!!.draw(mainView, numTiles*numTiles,pvm.curImg!!)
+        for (myTile in pvm.boardView!!.p) {
+            //reset set on click listener whether drawing for first time or nth
+            myTile.img.setOnClickListener{(onClickImage(myTile.img.id, myTile))}
+        }
 
 
+    }
+
+    private fun reDraw(){
+        //REDRAW!
+        pvm.boardView!!.reDraw(mainView, pvm.tileBy*pvm.tileBy, pvm.boardView!!.emptyspace) //use currrent board view to move tiles to new orientation
+        binding.moves.text= "Number of Moves: ${pvm.numMoves}"
+        for (myTile in pvm.boardView!!.p) {
+            //reset set on click listener whether drawing for first time or nth
+            myTile.img.setOnClickListener{(onClickImage(myTile.img.id, myTile))}
+        }
     }
 
 
