@@ -17,8 +17,14 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
+import androidx.lifecycle.ViewModelProvider
 import com.example.slidepuzzle.databinding.ActivityMainBinding
 
 import nl.dionsegijn.konfetti.core.Party
@@ -34,38 +40,53 @@ const val ma="MyMainActivty"
 const val lcm="LifeCycleManagement"
 class MainActivity : AppCompatActivity() {
 
+
     private lateinit var binding: ActivityMainBinding
-    lateinit  var boardView: BoardView
-    var tileBy: Int=0
+    private lateinit var pvm: PuzzleViewModel
 
-    var numMoves: Int=0
-    private var isSolved:Boolean= true
 
-    private lateinit var curImage: Bitmap
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        //binding= DataBindingUtil.setContentView(this, R.layout.activity_main)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         mainView=findViewById(R.id.mainLayout)
-        //TO DO: Allow user to select 3x3 or 4x4 puzzle or do it random (POD style)
-        //for now, set it to 3
-        tileBy=3
-        curImage=BitmapFactory.decodeResource(resources, R.drawable.image)
+
+        //get rid of interference with bottom buttons on google pixel
+
+        // Apply system bar insets (navigation + status bar)
+
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+
+            view.updatePadding(
+                top = systemBars.top,
+                bottom = systemBars.bottom
+            )
+
+            WindowInsetsCompat.CONSUMED
+        }
+        pvm=ViewModelProvider(this)[PuzzleViewModel::class.java]
+        if (pvm.curImg==null){
+            pvm.curImg=BitmapFactory.decodeResource(resources, R.drawable.image)
+        }
 
 
+        //binding.puzzleViewModel=pvm
     }
-
-
 
 
 
     override fun onResume(){
         super.onResume()
         Log.d(lcm, "on Resume")
+
     }
 
     override fun onStop() {
+        Log.d(lcm, mainView.childCount.toString())
         super.onStop()
         Log.d(lcm, "Stopped")
     }
@@ -83,37 +104,31 @@ class MainActivity : AppCompatActivity() {
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
-
-        if (!::boardView.isInitialized){
-            boardView= BoardView(this)
-            binding.shuffleBtn.setOnClickListener{(onShuffle())}
-            binding.selectImage.setOnClickListener{(findPic())}
-            binding.gridSelector.setOnClickListener{updateTileBy()}
-            SetNumTiles(tileBy)
-
-
+        if (pvm.boardView==null){
+            resetAndDraw(pvm.tileBy) //delete existing image views and draw
+        }else{
+            reDraw()
         }
+        binding.shuffleBtn.setOnClickListener{(onShuffle())}
+        binding.selectImage.setOnClickListener{(findPic())}
+        binding.gridSelector.setOnClickListener{updateTileBy()}
+
+
 
 
     }
 
-    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
-        super.onRestoreInstanceState(savedInstanceState)
-        Log.d("Testing", savedInstanceState.getInt("numMoves").toString())
-        //TO DO: Redraw
-
-    }
 
     private fun updateTileBy(){
 
-        if (tileBy==3){
-            tileBy=4
+        if (pvm.tileBy==3){
+            pvm.tileBy=4
             binding.gridSelector.setImageResource(R.drawable.gridfour)
         }else{
-            tileBy=3
+            pvm.tileBy=3
             binding.gridSelector.setImageResource(R.drawable.grid)
         }
-        SetNumTiles(tileBy)
+        resetAndDraw(pvm.tileBy)
     }
 
     override fun onRestart() {
@@ -121,19 +136,30 @@ class MainActivity : AppCompatActivity() {
         Log.d(lcm, "on RESTART called")
     }
 
-    private fun SetNumTiles(numTiles: Int){
+    private fun resetAndDraw(numTiles: Int){
+        if (pvm.boardView==null){
+            pvm.boardView= BoardView(this)
+        }
         //reset values
-        boardView.resetPuzzle(mainView)
+        pvm.boardView!!.resetPuzzle(mainView)
+        pvm.numMoves=0
+        binding.moves.text= "Number of Moves: ${pvm.numMoves}"
+        pvm.boardView!!.draw(mainView, numTiles*numTiles,pvm.curImg!!)
+        for (myTile in pvm.boardView!!.p) {
+            //reset set on click listener whether drawing for first time or nth
+            myTile.img.setOnClickListener{(onClickImage(myTile.img.id, myTile))}
+        }
 
-        tileBy=numTiles
-        boardView.draw(mainView, numTiles*numTiles,curImage)
-        for (myTile in boardView.p) {
 
-            var myImage: ImageView=myTile.img
+    }
 
-            myImage.setOnClickListener{(onClickImage(myTile.img.id, myTile))}
-
-
+    private fun reDraw(){
+        //REDRAW!
+        pvm.boardView!!.reDraw(mainView, pvm.tileBy*pvm.tileBy, pvm.boardView!!.emptyspace) //use currrent board view to move tiles to new orientation
+        binding.moves.text= "Number of Moves: ${pvm.numMoves}"
+        for (myTile in pvm.boardView!!.p) {
+            //reset set on click listener whether drawing for first time or nth
+            myTile.img.setOnClickListener{(onClickImage(myTile.img.id, myTile))}
         }
     }
 
@@ -142,51 +168,91 @@ class MainActivity : AppCompatActivity() {
 
    private fun onClickImage(id: Int, tile:Tile){
        Log.d(ma, "Clicked for image id="+id.toString())
-       numMoves += 1
-
-        if (!isSolved){
+       pvm.numMoves += 1
+       binding.moves.text= "Number of Moves: ${pvm.numMoves}"
+        if (!pvm.isSolved){
 
             //row=tile.curp//tileby
 
-            var row =tile.curp/(tileBy)
-            var col=tile.curp%(tileBy)
+            var row =tile.curp/(pvm.tileBy)
+            var col=tile.curp%(pvm.tileBy)
 
-            var emptyRow=boardView.emptyspace/(tileBy)
-            var emptyCol=boardView.emptyspace%tileBy
+            var emptyRow=pvm.boardView!!.emptyspace/(pvm.tileBy)
+            var emptyCol=pvm.boardView!!.emptyspace%pvm.tileBy
 
             var clickspace  =tile.curp
 
             if (row==emptyRow || col==emptyCol){
-                binding.moves.text= "Number of Moves: $numMoves"
+
                 var shift: Int =0
                 if (row==emptyRow){
                     shift=if(col<emptyCol)-1 else 1
                 }else{
-                    shift=if(row<emptyRow)(-tileBy) else tileBy
+                    shift=if(row<emptyRow)(-pvm.tileBy) else pvm.tileBy
                 }
                 //to do : Debug here
-                while (boardView.emptyspace!=clickspace){
+                while (pvm.boardView!!.emptyspace!=clickspace){
                     //swap closest click space
                     //we must first find tile that is on the closest click space
-                    boardView.moveTile(boardView.findTile(boardView.emptyspace+shift))
+                    pvm.boardView!!.moveTile(pvm.boardView!!.findTile(pvm.boardView!!.emptyspace+shift))
                 }
 
-                isSolved=boardView.isSolved()
-                if (isSolved){
+                pvm.isSolved=pvm.boardView!!.isSolved()
+                if (pvm.isSolved){
                     WinFragment().show(supportFragmentManager, "Win!")
 
-                    val p=Party(
-                        speed = 0f,
-                        maxSpeed = 30f,
-                        damping = 0.9f,
-                        spread = 360,
-                        colors = listOf(0xfce18a, 0xff726d, 0xf4306d, 0xb48def),
-                        emitter = Emitter(200, TimeUnit.MILLISECONDS).max(100),
-                        position = Position.Relative(0.5, 0.3)
-                    )
-                    binding.konfettiView?.start(p)
+                    if (mainView.resources.configuration.orientation==1){
+                        val p=Party(
+                            speed = 0f,
+                            maxSpeed = 30f,
+                            damping = 0.9f,
+                            spread = 360,
+                            colors = listOf(0xfce18a, 0xff726d, 0xf4306d, 0xb48def),
+                            emitter = Emitter(200, TimeUnit.MILLISECONDS).max(100),
+                            position = Position.Relative(0.5, 0.3),
+                            timeToLive = 5000
+                        )
+                        binding.konfettiView?.start(p)
+                    }else{
+                        val p1=Party(
+                            speed = 0f,
+                            maxSpeed = 30f,
+                            damping = 0.9f,
+                            spread = 360,
+                            colors = listOf(0xfce18a, 0xff726d, 0xf4306d, 0xb48def),
+                            emitter = Emitter(200, TimeUnit.MILLISECONDS).max(100),
+                            position = Position.Relative(0.5, 0.5),
+                            timeToLive = 5000
 
-                    
+                        )
+                        val p2=Party(
+                            speed = 0f,
+                            maxSpeed = 30f,
+                            damping = 0.9f,
+                            spread = 360,
+                            colors = listOf(0xfce18a, 0xff726d, 0xf4306d, 0xb48def),
+                            emitter = Emitter(200, TimeUnit.MILLISECONDS).max(100),
+                            position = Position.Relative(0.25, 0.5),
+                            timeToLive = 5000
+
+                        )
+                        val p3=Party(
+                            speed = 0f,
+                            maxSpeed = 30f,
+                            damping = 0.9f,
+                            spread = 360,
+                            colors = listOf(0xfce18a, 0xff726d, 0xf4306d, 0xb48def),
+                            emitter = Emitter(200, TimeUnit.MILLISECONDS).max(100),
+                            position = Position.Relative(0.75, 0.5),
+                            timeToLive = 5000
+
+                        )
+                        binding.konfettiView?.start(p2)
+                        binding.konfettiView?.start(p3)
+                        binding.konfettiView?.start(p1)
+                    }
+
+
 
                 }
 
@@ -199,10 +265,10 @@ class MainActivity : AppCompatActivity() {
 
     fun onShuffle(){
 
-        numMoves=0
+        pvm.numMoves=0
         binding.moves.text= "Number of Moves: 0"
-        boardView.shuffleBoard(tileBy*tileBy)
-        isSolved=false
+        pvm.boardView!!.shuffleBoard(pvm.tileBy*pvm.tileBy)
+        pvm.isSolved=false
 
     }
 
@@ -211,9 +277,9 @@ class MainActivity : AppCompatActivity() {
         val intent = Intent()
         intent.setType("image/*")
         intent.setAction(Intent.ACTION_GET_CONTENT)
-
+//TESTING WHAT HAPPENS IF WE SET IT TO NOTHINGGG THEN RESET
+        pvm.boardView=null
         resultLauncher.launch(Intent.createChooser(intent, "Select Picture"))
-        Log.d("resultLauncherTest","made it past")
 
     }
 
@@ -234,11 +300,10 @@ class MainActivity : AppCompatActivity() {
             cursor.close()
             val test=uri.path
 
-           var bitmap = MediaStore.Images.Media.getBitmap(this.contentResolver, uri)
+            var bitmap = MediaStore.Images.Media.getBitmap(this.contentResolver, uri)
             var source=ImageDecoder.createSource(this.contentResolver, uri)
-            val bitmap2=ImageDecoder.decodeBitmap(source)
-            curImage=bitmap
-            SetNumTiles(tileBy)
+            pvm.curImg=bitmap
+            resetAndDraw(pvm.tileBy)
         }
 
 
@@ -248,27 +313,8 @@ class MainActivity : AppCompatActivity() {
 
     private var resultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
 
-
       }
 
-    override fun onSaveInstanceState(outState: Bundle, outPersistentState: PersistableBundle) {
-        super.onSaveInstanceState(outState, outPersistentState)
-        outState.putInt("numMoves", numMoves)
-
-        //create a list of positions
-        var listPos=ArrayList<Int>()
-
-        for (i in boardView.p.indices){
-
-            listPos.add(boardView.p[i].curp)
-        }
-        outState.putIntegerArrayList("ListOfPositions", listPos)
-        outState.putParcelable("myImage", curImage)
-
-
-
-
-    }
 
 
 
