@@ -20,6 +20,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
 import androidx.lifecycle.ViewModelProvider
 import com.example.slidepuzzle.databinding.ActivityMainBinding
 
@@ -50,6 +54,20 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
         mainView=findViewById(R.id.mainLayout)
 
+        //get rid of interference with bottom buttons on google pixel
+
+        // Apply system bar insets (navigation + status bar)
+
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+
+            view.updatePadding(
+                top = systemBars.top,
+                bottom = systemBars.bottom
+            )
+
+            WindowInsetsCompat.CONSUMED
+        }
         pvm=ViewModelProvider(this)[PuzzleViewModel::class.java]
         if (pvm.curImg==null){
             pvm.curImg=BitmapFactory.decodeResource(resources, R.drawable.image)
