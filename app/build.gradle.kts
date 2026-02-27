@@ -10,8 +10,8 @@ android {
     defaultConfig {
         applicationId = "com.AllisonApps.slidepuzzle"
         minSdk = 24
-        targetSdk = 34
-        versionCode = 3
+        targetSdk = 35
+        versionCode = 6
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
